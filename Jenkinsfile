@@ -53,9 +53,6 @@ pipeline {
         stage('Deploy with Terraform') {
             steps {
                 script {
-                        sh """
-                        export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-                        export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
                         cd ${TERRAFORM_DIR} 
                         terraform init
                         terraform plan
