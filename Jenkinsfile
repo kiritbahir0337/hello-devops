@@ -31,27 +31,38 @@ pipeline {
 
         stage('Build and Push Docker Images') {
             when {
-                expression { return !params.DESTROY_INFRA } // Skip if destroy is selected
+                expression { return !params.DESTROY_INFRA } // Skip if destroying infra
             }
             steps {
                 script {
-                    sh 'docker build --platform linux/amd64 -t ${DOCKER_IMAGE_FRONTEND} -f frontend/Dockerfile ./frontend'
-                    sh 'docker build --platform linux/amd64 -t ${DOCKER_IMAGE_BACKEND} -f backend/Dockerfile ./backend'
-                    sh "docker push ${DOCKER_IMAGE_FRONTEND}"
-                    sh "docker push ${DOCKER_IMAGE_BACKEND}"
+                    sh '''
+                        docker build --platform linux/amd64 -t ${DOCKER_IMAGE_FRONTEND} -f frontend/Dockerfile ./frontend
+                        docker build --platform linux/amd64 -t ${DOCKER_IMAGE_BACKEND} -f backend/Dockerfile ./backend
+                        docker push ${DOCKER_IMAGE_FRONTEND}
+                        docker push ${DOCKER_IMAGE_BACKEND}
+                    '''
+                }
+            }
+        }
+
+        stage('Terraform Init') {
+            steps {
+                script {
+                    dir("${TERRAFORM_DIR}") {
+                        sh 'terraform init'
+                    }
                 }
             }
         }
 
         stage('Deploy with Terraform') {
             when {
-                expression { return !params.DESTROY_INFRA } // Skip if destroy is selected
+                expression { return !params.DESTROY_INFRA } // Skip if destroying infra
             }
             steps {
                 script {
                     dir("${TERRAFORM_DIR}") {
                         sh '''
-                            terraform init
                             terraform plan
                             terraform apply -auto-approve
                         '''
@@ -62,15 +73,12 @@ pipeline {
 
         stage('Destroy Infrastructure') {
             when {
-                expression { return params.DESTROY_INFRA } // Run only if destroy is selected
+                expression { return params.DESTROY_INFRA } // Run only if destroying infra
             }
             steps {
                 script {
                     dir("${TERRAFORM_DIR}") {
-                        sh '''
-                            terraform init
-                            terraform destroy -auto-approve
-                        '''
+                        sh 'terraform destroy -auto-approve'
                     }
                 }
             }
