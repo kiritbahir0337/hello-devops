@@ -10,6 +10,9 @@ COPY . .
 # Install dependencies
 RUN pip install --no-cache-dir fastapi uvicorn
 
+# Ensure correct working directory
+WORKDIR /app
+
 # Expose the port FastAPI runs on
 EXPOSE 8000
 
