@@ -53,6 +53,7 @@ pipeline {
         stage('Deploy with Terraform') {
             steps {
                 script {
+		    sh """
                         cd ${TERRAFORM_DIR} 
                         terraform init
                         terraform plan
