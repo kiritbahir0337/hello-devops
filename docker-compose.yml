@@ -14,7 +14,7 @@ services:
     image: kiritahir/hello-devops-frontend:latest
     container_name: frontend-container
     environment:
-      - VITE_BACKEND_URL=http://localhost:8000
+      - VITE_BACKEND_URL=http://backend:8000
     ports:
       - "80:80"
     depends_on:

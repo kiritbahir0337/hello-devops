@@ -6,7 +6,7 @@ function App() {
   const [deploymentStatus, setDeploymentStatus] = useState(null)
   const [activeTab, setActiveTab] = useState('overview')
   const [deploymentDetails, setDeploymentDetails] = useState(null)
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://backend:8000'
 
   const handleDeploy = async () => {
     setIsDeploying(true)
