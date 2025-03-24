@@ -2,18 +2,19 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE_FRONTEND = 'kiritahir/hello-devops-frontend:latest'  // Replace with your Docker Hub username
-        DOCKER_IMAGE_BACKEND = 'kiritahir/hello-devops-backend:latest'    // Replace with your Docker Hub username
-        DOCKER_REGISTRY = 'https://hub.docker.com/' // Docker Hub registry URL
-        TERRAFORM_DIR = './terraform' // Path to your Terraform directory
-        GIT_REPO_URL = 'https://github.com/yourusername/hello-devops.git'  // Replace with your Git repository URL
+        DOCKER_IMAGE_FRONTEND = 'kiritahir/hello-devops-frontend:latest'
+        DOCKER_IMAGE_BACKEND = 'kiritahir/hello-devops-backend:latest'
+        TERRAFORM_DIR = './terraform'
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                // Clone the Git repository
-                git branch: 'main', url: "${GIT_REPO_URL}"
+                script {
+                    withCredentials([string(credentialsId: 'GITHUB_PAT', variable: 'GITHUB_PAT')]) {
+                        sh "git clone https://${GITHUB_PAT}@github.com/kiritbahir0337/hello-devops.git"
+                    }
+                }
             }
         }
 
@@ -45,7 +46,6 @@ pipeline {
         stage('Deploy with Terraform') {
             steps {
                 script {
-                    // Correct way to use AWS credentials
                     withCredentials([
                         string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
                         string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
@@ -53,9 +53,10 @@ pipeline {
                         sh """
                         export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
                         export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-                        cd ${TERRAFORM_DIR} && terraform init
-                        cd ${TERRAFORM_DIR} && terraform plan
-                        cd ${TERRAFORM_DIR} && terraform apply -auto-approve
+                        cd ${TERRAFORM_DIR} 
+                        terraform init
+                        terraform plan
+                        terraform apply -auto-approve
                         """
                     }
                 }
@@ -65,10 +66,10 @@ pipeline {
 
     post {
         success {
-            echo 'Deployment successfully completed!'
+            echo '✅ Deployment successfully completed!'
         }
         failure {
-            echo 'Something went wrong. Check the logs for errors.'
+            echo '❌ Something went wrong. Check the logs for errors.'
         }
     }
 }
