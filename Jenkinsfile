@@ -12,7 +12,14 @@ pipeline {
             steps {
                 script {
                     withCredentials([string(credentialsId: 'GITHUB_PAT', variable: 'GITHUB_PAT')]) {
-                        sh "git clone https://${GITHUB_PAT}@github.com/kiritbahir0337/hello-devops.git"
+                        sh '''
+                            if [ -d "hello-devops/.git" ]; then
+                                cd hello-devops && git reset --hard HEAD && git pull origin main
+                            else
+                                rm -rf hello-devops
+                                git clone https://${GITHUB_PAT}@github.com/kiritbahir0337/hello-devops.git
+                            fi
+                        '''
                     }
                 }
             }
@@ -46,10 +53,6 @@ pipeline {
         stage('Deploy with Terraform') {
             steps {
                 script {
-                    withCredentials([
-                        string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-                        string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-                    ]) {
                         sh """
                         export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
                         export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
@@ -58,7 +61,6 @@ pipeline {
                         terraform plan
                         terraform apply -auto-approve
                         """
-                    }
                 }
             }
         }
