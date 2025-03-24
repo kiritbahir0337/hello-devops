@@ -5,25 +5,39 @@ function App() {
   const [isDeploying, setIsDeploying] = useState(false)
   const [deploymentStatus, setDeploymentStatus] = useState(null)
   const [activeTab, setActiveTab] = useState('overview')
+  const [deploymentDetails, setDeploymentDetails] = useState(null)
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
 
   const handleDeploy = async () => {
     setIsDeploying(true)
-    setDeploymentStatus('Initializing infrastructure...')
     
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    setDeploymentStatus('Creating EC2 instance...')
-    
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    setDeploymentStatus('Configuring security groups...')
-    
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    setDeploymentStatus('Installing Docker...')
-    
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    setDeploymentStatus('Deploying containers...')
-    
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    setDeploymentStatus('✅ Deployment complete!')
+    try {
+      // Get initial deployment message
+      const startResponse = await fetch(`${backendUrl}/start-deployment`)
+      const startData = await startResponse.json()
+      setDeploymentDetails(startData)
+      setDeploymentStatus(startData.status)
+
+      // Simulate deployment steps with backend messages
+      for (const step of startData.steps) {
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        setDeploymentStatus(step)
+      }
+
+      // Get success message
+      const successResponse = await fetch(`${backendUrl}/deployment-success`)
+      const successData = await successResponse.json()
+      setDeploymentDetails(successData)
+      setDeploymentStatus(successData.message)
+    } catch (error) {
+      console.error('Deployment error:', error)
+      setDeploymentStatus('❌ Error during deployment')
+      setDeploymentDetails({
+        message: 'Deployment Failed',
+        details: 'There was an error connecting to the backend service.'
+      })
+    }
+
     setIsDeploying(false)
   }
 
@@ -101,6 +115,11 @@ function App() {
                 <span className="terminal-button green"></span>
               </div>
               <div className="terminal-content">
+                {deploymentDetails?.greeting && (
+                  <div className="greeting-message">
+                    {deploymentDetails.greeting}
+                  </div>
+                )}
                 <button 
                   className={`deploy-button ${isDeploying ? 'deploying' : ''}`}
                   onClick={handleDeploy}
@@ -111,6 +130,16 @@ function App() {
                 {deploymentStatus && (
                   <div className="status-container">
                     <p className="status-text">{deploymentStatus}</p>
+                    {deploymentDetails?.details && (
+                      <p className="details-text">{deploymentDetails.details}</p>
+                    )}
+                    {deploymentDetails?.next_steps && (
+                      <ul className="next-steps">
+                        {deploymentDetails.next_steps.map((step, index) => (
+                          <li key={index}>{step}</li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 )}
               </div>
