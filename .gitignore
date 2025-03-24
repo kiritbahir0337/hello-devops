@@ -1,0 +1,16 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Node.js
+node_modules/
+dist/
+
+# Terraform
+terraform/.terraform/
+terraform/terraform.tfstate*
+
+# Environment files
+.env
+
