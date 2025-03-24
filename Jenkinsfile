@@ -7,6 +7,10 @@ pipeline {
         TERRAFORM_DIR = './terraform'
     }
 
+    parameters {
+        booleanParam(name: 'DESTROY_INFRA', defaultValue: false, description: 'Check this to destroy infrastructure')
+    }
+
     stages {
         stage('Checkout Code') {
             steps {
@@ -25,25 +29,14 @@ pipeline {
             }
         }
 
-        stage('Build Frontend Docker Image') {
+        stage('Build and Push Docker Images') {
+            when {
+                expression { return !params.DESTROY_INFRA } // Skip if destroy is selected
+            }
             steps {
                 script {
                     sh 'docker build --platform linux/amd64 -t ${DOCKER_IMAGE_FRONTEND} -f frontend/Dockerfile ./frontend'
-                }
-            }
-        }
-
-        stage('Build Backend Docker Image') {
-            steps {
-                script {
                     sh 'docker build --platform linux/amd64 -t ${DOCKER_IMAGE_BACKEND} -f backend/Dockerfile ./backend'
-                }
-            }
-        }
-
-        stage('Push Docker Images to Docker Hub') {
-            steps {
-                script {
                     sh "docker push ${DOCKER_IMAGE_FRONTEND}"
                     sh "docker push ${DOCKER_IMAGE_BACKEND}"
                 }
@@ -51,14 +44,34 @@ pipeline {
         }
 
         stage('Deploy with Terraform') {
+            when {
+                expression { return !params.DESTROY_INFRA } // Skip if destroy is selected
+            }
             steps {
                 script {
-		    sh """
-                        cd ${TERRAFORM_DIR} 
-                        terraform init
-                        terraform plan
-                        terraform apply -auto-approve
-                        """
+                    dir("${TERRAFORM_DIR}") {
+                        sh '''
+                            terraform init
+                            terraform plan
+                            terraform apply -auto-approve
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Destroy Infrastructure') {
+            when {
+                expression { return params.DESTROY_INFRA } // Run only if destroy is selected
+            }
+            steps {
+                script {
+                    dir("${TERRAFORM_DIR}") {
+                        sh '''
+                            terraform init
+                            terraform destroy -auto-approve
+                        '''
+                    }
                 }
             }
         }
@@ -66,10 +79,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ Deployment successfully completed!'
+            echo '✅ Pipeline executed successfully!'
         }
         failure {
-            echo '❌ Something went wrong. Check the logs for errors.'
+            echo '❌ Pipeline failed. Check the logs for details.'
         }
     }
 }
