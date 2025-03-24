@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   backend:
-    image: kiritahir/hello-devops-backend:latest-mac
+    image: kiritahir/hello-devops-backend:latest
     container_name: backend-container
     ports:
       - "8000:8000"
@@ -11,7 +11,7 @@ services:
       - app-network
 
   frontend:
-    image: kiritahir/hello-devops-frontend:latest-mac
+    image: kiritahir/hello-devops-frontend:latest
     container_name: frontend-container
     environment:
       - VITE_BACKEND_URL=http://localhost:8000
