@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 
 function App() {
@@ -6,14 +6,45 @@ function App() {
   const [deploymentStatus, setDeploymentStatus] = useState(null)
   const [activeTab, setActiveTab] = useState('overview')
   const [deploymentDetails, setDeploymentDetails] = useState(null)
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://backend:8000'
+  const [backendHealth, setBackendHealth] = useState(false)
+  const [error, setError] = useState(null)
+
+  // Get backend URL from environment variable with fallback for development
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+
+  // Check backend health on component mount
+  useEffect(() => {
+    checkBackendHealth()
+  }, [])
+
+  const checkBackendHealth = async () => {
+    try {
+      const response = await fetch(`${backendUrl}/health`)
+      const data = await response.json()
+      setBackendHealth(data.status === 'healthy')
+      setError(null)
+    } catch (error) {
+      console.error('Backend health check failed:', error)
+      setBackendHealth(false)
+      setError('Unable to connect to backend service')
+    }
+  }
 
   const handleDeploy = async () => {
+    if (!backendHealth) {
+      setDeploymentStatus('❌ Backend service is not available')
+      return
+    }
+
     setIsDeploying(true)
+    setError(null)
     
     try {
       // Get initial deployment message
       const startResponse = await fetch(`${backendUrl}/start-deployment`)
+      if (!startResponse.ok) {
+        throw new Error(`HTTP error! status: ${startResponse.status}`)
+      }
       const startData = await startResponse.json()
       setDeploymentDetails(startData)
       setDeploymentStatus(startData.status)
@@ -26,6 +57,9 @@ function App() {
 
       // Get success message
       const successResponse = await fetch(`${backendUrl}/deployment-success`)
+      if (!successResponse.ok) {
+        throw new Error(`HTTP error! status: ${successResponse.status}`)
+      }
       const successData = await successResponse.json()
       setDeploymentDetails(successData)
       setDeploymentStatus(successData.message)
@@ -34,8 +68,9 @@ function App() {
       setDeploymentStatus('❌ Error during deployment')
       setDeploymentDetails({
         message: 'Deployment Failed',
-        details: 'There was an error connecting to the backend service.'
+        details: error.message || 'There was an error connecting to the backend service.'
       })
+      setError(error.message)
     }
 
     setIsDeploying(false)
@@ -43,6 +78,13 @@ function App() {
 
   return (
     <div className="app-wrapper">
+      {error && (
+        <div className="error-banner">
+          {error}
+          <button onClick={checkBackendHealth}>Retry Connection</button>
+        </div>
+      )}
+      
       <nav className="navbar">
         <div className="nav-brand">DevOps Automation</div>
         <div className="nav-links">
