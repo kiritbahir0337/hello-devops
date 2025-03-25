@@ -25,9 +25,6 @@ resource "aws_instance" "hello_devops" {
     # Make the script executable
     chmod +x auto.sh
     
-    # Modify the script slightly to work with user data
-    sed -i 's/exec su - ubuntu/newgrp docker/' auto.sh
-    
     # Run the script
     ./auto.sh
     EOF
