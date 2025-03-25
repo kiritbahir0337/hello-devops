@@ -1,34 +1,11 @@
 version: "3.8"
 
 services:
-  nginx:
-    image: nginx:latest
-    container_name: nginx-proxy
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
-    depends_on:
-      - frontend
-      - backend
-    networks:
-      - app-network
-
   backend:
     image: kiritahir/hello-devops-backend:latest
     container_name: backend-container
-    environment:
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://54.89.143.93}
-    expose:
-      - "8000"
-    volumes:
-      - ./backend:/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    ports:
+      - "8000:8000"
     restart: always
     networks:
       - app-network
@@ -37,16 +14,11 @@ services:
     image: kiritahir/hello-devops-frontend:latest
     container_name: frontend-container
     environment:
-      - VITE_BACKEND_URL=http://54.89.143.93/api
-    expose:
-      - "5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    command: npm run dev -- --host 0.0.0.0
+      - VITE_BACKEND_URL=http://backend:8000
+    ports:
+      - "80:80"
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     restart: always
     networks:
       - app-network
