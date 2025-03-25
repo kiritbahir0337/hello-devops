@@ -6,13 +6,15 @@ function App() {
   const [deploymentStatus, setDeploymentStatus] = useState(null)
   const [activeTab, setActiveTab] = useState('overview')
   const [deploymentDetails, setDeploymentDetails] = useState(null)
-  const backendUrl = import.meta.env.VITE_BACKEND_URL
+  
+  // Get the backend URL from environment variable or use the current host with port 8000
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || `http://${window.location.hostname}:8000`
 
   const handleDeploy = async () => {
     setIsDeploying(true)
     
     try {
-      // Get initial deployment message
+      // Use the full URL for the API call
       const startResponse = await fetch(`${backendUrl}/start-deployment`)
       const startData = await startResponse.json()
       setDeploymentDetails(startData)
@@ -34,7 +36,7 @@ function App() {
       setDeploymentStatus('❌ Error during deployment')
       setDeploymentDetails({
         message: 'Deployment Failed',
-        details: 'There was an error connecting to the backend service.'
+        details: `Error connecting to backend service at ${backendUrl}. Please check the backend service is running.`
       })
     }
 
