@@ -33,7 +33,7 @@ resource "aws_instance" "hello_devops" {
     sed -i 's|VITE_BACKEND_URL=http://\$PUBLIC_IP:8000|VITE_BACKEND_URL=http://\$PUBLIC_IP:8000|g' auto.sh
     
     # Run the script
-    ./auto.sh
+    bash ./auto.sh
     EOF
 
   tags = {
