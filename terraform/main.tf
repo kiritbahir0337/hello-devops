@@ -25,6 +25,13 @@ resource "aws_instance" "hello_devops" {
     # Make the script executable
     chmod +x auto.sh
     
+    # Modify the script to stay in app directory
+    sed -i 's|sudo docker-compose pull|cd ~/app \&\& sudo docker-compose pull|g' auto.sh
+    sed -i 's|sudo docker-compose up -d|cd ~/app \&\& sudo docker-compose up -d|g' auto.sh
+    
+    # Update the VITE_BACKEND_URL to use container name
+    sed -i 's|VITE_BACKEND_URL=http://\$PUBLIC_IP:8000|VITE_BACKEND_URL=http://\$PUBLIC_IP:8000|g' auto.sh
+    
     # Run the script
     ./auto.sh
     EOF
