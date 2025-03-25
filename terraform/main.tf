@@ -10,30 +10,34 @@ resource "aws_instance" "hello_devops" {
 
   user_data = <<-EOF
     #!/bin/bash
-    exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
-
-    # Wait for cloud-init to complete
-    while [ ! -f /var/lib/cloud/instance/boot-finished ]; do
-      echo 'Waiting for cloud-init...'
-      sleep 1
-    done
-
-    # Install Git
-    sudo apt-get update
-    sudo apt-get install -y git
-
-    # Clone the repository containing auto.sh
-    cd /home/ubuntu
-    sudo -u ubuntu git clone https://github.com/kiritbahir0337/compose.git
-
+    set -x  # Enable debugging
+    exec > >(tee /var/log/user-data.log) 2>&1
+    
+    # Update and install prerequisites
+    apt-get update -y
+    apt-get install -y git curl
+    
+    # Create ubuntu user directory if it doesn't exist
+    mkdir -p /home/ubuntu
+    chown ubuntu:ubuntu /home/ubuntu
+    
+    # Clone the repository as ubuntu user
+    sudo -u ubuntu git clone https://github.com/kiritbahir0337/compose.git /home/ubuntu/compose || {
+      echo "Failed to clone repository"
+      exit 1
+    }
+    
     # Navigate to the directory
-    cd /home/ubuntu/compose
-
-    # Make the script executable
+    cd /home/ubuntu/compose || {
+      echo "Failed to change directory"
+      exit 1
+    }
+    
+    # Make the script executable and run it
     chmod +x auto.sh
-
-    # Run the script with sudo
-    sudo bash ./auto.sh
+    sudo ./auto.sh
+    
+    echo "User data script completed successfully at $(date)" >> /var/log/user-data.log
     EOF
 
   tags = {
