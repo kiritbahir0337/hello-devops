@@ -77,19 +77,14 @@ pipeline {
             }
             steps {
                 script {
-                    def adminApproval = input(
-                        message: 'Are you sure you want to destroy the infrastructure?',
-                        ok: 'Proceed',
-                        parameters: [
-                            string(name: 'APPROVED_BY', description: 'Enter your username for verification')
-                        ]
-                    )
+                    // Get the logged-in user who triggered the pipeline
+                    def triggeredBy = currentBuild.rawBuild.getCause(hudson.model.Cause.UserIdCause)?.getUserId()
 
                     // List of authorized admin users
                     def allowedUsers = ['admin', 'jenkins-admin']  // Replace with actual admin usernames
                     
-                    if (!allowedUsers.contains(adminApproval)) {
-                        error("❌ You are not authorized to destroy infrastructure!")
+                    if (!allowedUsers.contains(triggeredBy)) {
+                        error("❌ User '${triggeredBy}' is not authorized to destroy infrastructure!")
                     }
 
                     dir("${TERRAFORM_DIR}") {
@@ -109,4 +104,3 @@ pipeline {
         }
     }
 }
-
