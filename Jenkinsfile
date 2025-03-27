@@ -9,15 +9,6 @@ pipeline {
 
     parameters {
         booleanParam(name: 'DESTROY_INFRA', defaultValue: false, description: 'Check this to destroy infrastructure')
-
-        // Active Choices Plugin parameter to enable/disable destroy option
-        activeChoiceParam('DESTROY_INFRA_ENABLED') {
-            description('Destroy option is only available for admins')
-            choiceType('SINGLE_SELECT')
-            script {
-                return hudson.model.User.current().getId() in ['admin', 'jenkins-admin'] ? ['true'] : ['false']
-            }
-        }
     }
 
     stages {
@@ -82,25 +73,10 @@ pipeline {
 
         stage('Destroy Infrastructure') {
             when {
-                expression { return params.DESTROY_INFRA && params.DESTROY_INFRA_ENABLED == 'true' } // Run only if admin
+                expression { return params.DESTROY_INFRA } // Run only if destroying infra
             }
             steps {
                 script {
-                    // Admin approval prompt before destruction
-                    def adminApproval = input(
-                        message: 'Are you sure you want to destroy the infrastructure?',
-                        ok: 'Proceed',
-                        parameters: [
-                            string(name: 'APPROVED_BY', description: 'Enter your username for verification')
-                        ]
-                    )
-
-                    // Only allow destruction if approved by an admin
-                    def allowedUsers = ['admin', 'jenkins-admin']
-                    if (!allowedUsers.contains(adminApproval)) {
-                        error("❌ You are not authorized to destroy infrastructure!")
-                    }
-
                     dir("${TERRAFORM_DIR}") {
                         sh 'terraform destroy -auto-approve'
                     }
