@@ -9,6 +9,15 @@ pipeline {
 
     parameters {
         booleanParam(name: 'DESTROY_INFRA', defaultValue: false, description: 'Check this to destroy infrastructure')
+
+        // Active Choices Plugin parameter to enable/disable destroy option
+        activeChoiceParam('DESTROY_INFRA_ENABLED') {
+            description('Destroy option is only available for admins')
+            choiceType('SINGLE_SELECT')
+            script {
+                return hudson.model.User.current().getId() in ['admin', 'jenkins-admin'] ? ['true'] : ['false']
+            }
+        }
     }
 
     stages {
@@ -31,7 +40,7 @@ pipeline {
 
         stage('Build and Push Docker Images') {
             when {
-                expression { return !params.DESTROY_INFRA }
+                expression { return !params.DESTROY_INFRA } // Skip if destroying infra
             }
             steps {
                 script {
@@ -57,7 +66,7 @@ pipeline {
 
         stage('Deploy with Terraform') {
             when {
-                expression { return !params.DESTROY_INFRA }
+                expression { return !params.DESTROY_INFRA } // Skip if destroying infra
             }
             steps {
                 script {
@@ -73,18 +82,23 @@ pipeline {
 
         stage('Destroy Infrastructure') {
             when {
-                expression { return params.DESTROY_INFRA }
+                expression { return params.DESTROY_INFRA && params.DESTROY_INFRA_ENABLED == 'true' } // Run only if admin
             }
             steps {
                 script {
-                    // Get the logged-in user who triggered the pipeline
-                    def triggeredBy = currentBuild.rawBuild.getCause(hudson.model.Cause.UserIdCause)?.getUserId()
+                    // Admin approval prompt before destruction
+                    def adminApproval = input(
+                        message: 'Are you sure you want to destroy the infrastructure?',
+                        ok: 'Proceed',
+                        parameters: [
+                            string(name: 'APPROVED_BY', description: 'Enter your username for verification')
+                        ]
+                    )
 
-                    // List of authorized admin users
-                    def allowedUsers = ['admin', 'jenkins-admin']  // Replace with actual admin usernames
-                    
-                    if (!allowedUsers.contains(triggeredBy)) {
-                        error("❌ User '${triggeredBy}' is not authorized to destroy infrastructure!")
+                    // Only allow destruction if approved by an admin
+                    def allowedUsers = ['admin', 'jenkins-admin']
+                    if (!allowedUsers.contains(adminApproval)) {
+                        error("❌ You are not authorized to destroy infrastructure!")
                     }
 
                     dir("${TERRAFORM_DIR}") {
@@ -104,3 +118,4 @@ pipeline {
         }
     }
 }
+
