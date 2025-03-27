@@ -31,7 +31,7 @@ pipeline {
 
         stage('Build and Push Docker Images') {
             when {
-                expression { return !params.DESTROY_INFRA } // Skip if destroying infra
+                expression { return !params.DESTROY_INFRA }
             }
             steps {
                 script {
@@ -57,7 +57,7 @@ pipeline {
 
         stage('Deploy with Terraform') {
             when {
-                expression { return !params.DESTROY_INFRA } // Skip if destroying infra
+                expression { return !params.DESTROY_INFRA }
             }
             steps {
                 script {
@@ -73,10 +73,25 @@ pipeline {
 
         stage('Destroy Infrastructure') {
             when {
-                expression { return params.DESTROY_INFRA } // Run only if destroying infra
+                expression { return params.DESTROY_INFRA }
             }
             steps {
                 script {
+                    def adminApproval = input(
+                        message: 'Are you sure you want to destroy the infrastructure?',
+                        ok: 'Proceed',
+                        parameters: [
+                            string(name: 'APPROVED_BY', description: 'Enter your username for verification')
+                        ]
+                    )
+
+                    // List of authorized admin users
+                    def allowedUsers = ['admin', 'jenkins-admin']  // Replace with actual admin usernames
+                    
+                    if (!allowedUsers.contains(adminApproval)) {
+                        error("❌ You are not authorized to destroy infrastructure!")
+                    }
+
                     dir("${TERRAFORM_DIR}") {
                         sh 'terraform destroy -auto-approve'
                     }
