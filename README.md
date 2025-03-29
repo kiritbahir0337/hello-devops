@@ -1,9 +1,7 @@
 # Pansophic Technologies : First Project
 
 # One-Click Deploy & One-Click Destroy
-![diagram-auto-deploy&destroy.png](https://eraser.imgix.net/workspaces/k7UHmO0ZNL7x8mCHx2lc/VihgNJHollNh2MjDrJBHm7ButGN2/i3cpoD0OW_us4GGtjNK6g.png?ixlib=js-3.7.0 "diagram-auto-deploy&destroy.png")
-
-
+![img.png](img.png)
 
 ## Overview
 The **One-Click Deploy & One-Click Destroy** project automates the deployment and destruction of a Docker-based application on AWS. This is achieved using a combination of Jenkins, Terraform, Docker Compose, and AWS EC2, streamlining the continuous integration and delivery process.
